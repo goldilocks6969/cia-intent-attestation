@@ -245,3 +245,61 @@ export interface SignedIntentCertificate {
   status: CertificateStatus;
   consumedAt: number | null;
 }
+
+// ---------------------------------------------------------------------------
+// Proposed transaction canonicalization (what the agent wants to pay for)
+// ---------------------------------------------------------------------------
+
+export const ProposedTxnSchema = z.object({
+  merchant: z.string().min(1),
+  category: z.string().default(""),
+  itemDescription: z.string().default(""),
+  /** Total in minor units (unit price × quantity). */
+  priceMinorUnits: z.number().int().nonnegative(),
+  currency: z.string().min(1),
+  quantity: z.number().int().positive(),
+});
+export type ProposedTxnCanonical = z.infer<typeof ProposedTxnSchema>;
+
+export const TXN_FIELDS = ["merchant", "category", "itemDescription", "priceMinorUnits", "currency", "quantity"] as const;
+
+/** Normalize + whitelist + RFC 8785 serialize a proposed transaction. Merchant is normalized with normalizeMerchant. */
+export function canonicalTxn(input: Record<string, unknown>): string {
+  const parsed = ProposedTxnSchema.parse({
+    merchant: normalizeMerchant(String(input.merchant ?? "")),
+    category: normalizeString(input.category ?? ""),
+    itemDescription: normalizeString(input.itemDescription ?? ""),
+    priceMinorUnits: normalizeMinorUnits(input.priceMinorUnits),
+    currency: normalizeString(input.currency ?? "").toUpperCase(),
+    quantity: input.quantity,
+  });
+  const selected: Record<string, unknown> = {};
+  for (const k of TXN_FIELDS) selected[k] = parsed[k];
+  const out = canonicalize(selected);
+  if (out === undefined) throw new Error("canonicalization failed");
+  return out;
+}
+
+/** Project a certificate's intent to the same shape as a proposed txn so the two can be compared field-by-field. */
+export function intentAsTxn(intent: Intent): ProposedTxnCanonical {
+  return {
+    merchant: normalizeMerchant(intent.merchant),
+    category: normalizeString(intent.category),
+    itemDescription: normalizeString(intent.itemDescription),
+    priceMinorUnits: intent.maxPriceMinorUnits,
+    currency: intent.currency,
+    quantity: intent.quantity,
+  };
+}
+
+/** Does the cart item plausibly match the intent's item description? Empty description ⇒ no constraint. */
+export function itemMatches(itemDescription: string, cartItemName: string): boolean {
+  const desc = normalizeString(itemDescription).toLowerCase();
+  if (!desc) return true;
+  const name = normalizeString(cartItemName).toLowerCase();
+  const stop = new Set(["a", "an", "the", "of", "for", "and", "with", "in", "on", "to", "x", "pcs", "pc"]);
+  const words = desc.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 2 && !stop.has(w));
+  if (!words.length) return true;
+  const hits = words.filter((w) => name.includes(w)).length;
+  return hits / words.length >= 0.5;
+}
