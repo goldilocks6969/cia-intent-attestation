@@ -36,7 +36,17 @@ serve it elsewhere.
 4. **Certificate** — the Signed Intent Certificate `{ intent, hash, signature, authenticatorData,
    clientDataJSON, credentialID, status }` with a live expiry countdown and a re-verify button.
 
-Add `?preview=certificate` to the URL to render a sample certificate without a passkey (handy for
+5. **Agent** — hand the certificate to a simulated shopping agent. "Run Agent (clean)" buys the
+   intended item; "Run Agent (with attacker content)" serves a product page with a hidden prompt
+   injection and the agent puts a ₹49,990 TV in the cart instead. The decision trace replays as a
+   live log and the injected payload is flashed on screen. The 🛡️ Verification Gate toggle is
+   remembered for the checkout step.
+
+Set `OPENAI_API_KEY` to run a real tool-using LLM agent (`OPENAI_MODEL`, default gpt-4o-mini).
+Without a key the backend uses a deterministic scripted agent, so the demo works offline.
+`AGENT_MODE=scripted|llm|auto` or `?agent=scripted` on the shop call forces a mode.
+
+Add `?preview=certificate` (or `?preview=agent`) to the URL to render a sample certificate without a passkey (handy for
 styling or rehearsing the demo).
 
 ### API (backend)
@@ -50,6 +60,10 @@ styling or rehearsing the demo).
 | GET | `/api/intent/certificate/:id` | fetch a certificate |
 | POST | `/api/intent/certificate/:id/verify` | re-run the pure `verifyCertificate` against the stored public key |
 | POST | `/api/intent/certificate/:id/check` | evaluate a proposed `{ merchant, priceMinorUnits, currency, quantity }` against the certificate's constraints |
+
+| POST | `/api/agent/shop?attackEnabled=true\|false` | run the shopping agent for `{ intentId }`; returns `{ decision_trace, finalCart, hijacked, injectedPayload }` |
+| GET | `/api/agent/product-page?sku=X&attackEnabled=true` | the attacker-controlled product page (HTML, or JSON with `format=json`) |
+| GET | `/api/agent/run/:intentId` | latest agent run for an intent |
 
 Challenges (registration and intent) are single-use: they are deleted on the first verify attempt,
 success or fail.

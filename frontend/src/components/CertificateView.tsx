@@ -6,9 +6,10 @@ import { formatCountdown, isoTime, paiseToRupees, truncateMiddle } from "../lib/
 interface Props {
   certificate: SignedIntentCertificate;
   onNewIntent: () => void;
+  onRunAgent?: () => void;
 }
 
-export function CertificateView({ certificate: cert, onNewIntent }: Props) {
+export function CertificateView({ certificate: cert, onNewIntent, onRunAgent }: Props) {
   const [now, setNow] = useState(Date.now());
   const [verification, setVerification] = useState<CertificateVerification | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -141,10 +142,15 @@ export function CertificateView({ certificate: cert, onNewIntent }: Props) {
         </div>
       </div>
 
-      <div className="mt-5 flex justify-end">
-        <button className="btn-primary" onClick={onNewIntent}>
+      <div className="mt-5 flex justify-end gap-3">
+        <button className="btn-ghost" onClick={onNewIntent}>
           New intent
         </button>
+        {onRunAgent && (
+          <button className="btn-primary" onClick={onRunAgent}>
+            Hand off to shopping agent →
+          </button>
+        )}
       </div>
     </div>
   );

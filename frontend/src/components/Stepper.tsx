@@ -1,10 +1,11 @@
-export type StepKey = "register" | "intent" | "approve" | "certificate";
+export type StepKey = "register" | "intent" | "approve" | "certificate" | "agent";
 
 const STEPS: { key: StepKey; label: string; hint: string }[] = [
   { key: "register", label: "Register", hint: "Bind a passkey" },
   { key: "intent", label: "Intent", hint: "Declare constraints" },
   { key: "approve", label: "Approve", hint: "Biometric signature" },
   { key: "certificate", label: "Certificate", hint: "Signed attestation" },
+  { key: "agent", label: "Agent", hint: "Run + attack" },
 ];
 
 export function Stepper({ current }: { current: StepKey }) {
@@ -33,7 +34,7 @@ export function Stepper({ current }: { current: StepKey }) {
                 <div className="text-[10px] text-slate-500">{s.hint}</div>
               </div>
             </div>
-            {i < STEPS.length - 1 && <span className={`h-px w-6 sm:w-10 ${i < idx ? "bg-mint/60" : "bg-line"}`} />}
+            {i < STEPS.length - 1 && <span className={`h-px w-4 sm:w-8 ${i < idx ? "bg-mint/60" : "bg-line"}`} />}
           </li>
         );
       })}

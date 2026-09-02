@@ -127,3 +127,49 @@ export function errorMessage(err: unknown): string {
   }
   return String(err);
 }
+
+// --- agent -----------------------------------------------------------------------------------
+
+export type TraceRole = "agent" | "tool" | "attacker" | "system";
+export type TraceType = "thought" | "tool_call" | "result" | "warning" | "decision" | "info";
+
+export interface TraceEntry {
+  step: number;
+  ts: number;
+  role: TraceRole;
+  type: TraceType;
+  color: "green" | "cyan" | "amber" | "red" | "slate";
+  text: string;
+  thought?: string;
+  action?: { tool: string; args: Record<string, unknown> };
+  data?: unknown;
+}
+
+export interface CartLine {
+  sku: string;
+  name: string;
+  merchant: string;
+  priceMinorUnits: number;
+  currency: "INR";
+  quantity: number;
+}
+
+export interface AgentRun {
+  runId: string;
+  intentId: string;
+  mode: "scripted" | "llm";
+  attackEnabled: boolean;
+  startedAt: number;
+  finishedAt: number;
+  decision_trace: TraceEntry[];
+  finalCart: CartLine | null;
+  hijacked: boolean;
+  intendedSku: string | null;
+  injectedPayload: string | null;
+}
+
+export const agentApi = {
+  shop: (intentId: string, attackEnabled: boolean) =>
+    request<AgentRun>(`/agent/shop?attackEnabled=${attackEnabled ? "true" : "false"}`, { json: { intentId } }),
+  latestRun: (intentId: string) => request<AgentRun>(`/agent/run/${encodeURIComponent(intentId)}`),
+};
