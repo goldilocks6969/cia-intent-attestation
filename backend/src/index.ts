@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { config } from "./config.js";
 import { log } from "./log.js";
 import { registerRouter } from "./routes/register.js";
@@ -13,6 +15,7 @@ const app = express();
 app.disable("x-powered-by");
 app.set("etag", false);
 app.set("trust proxy", 1);
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: config.expectedOrigin }));
 app.use(express.json({ limit: "256kb" }));
 app.use((req, _res, next) => {
@@ -20,6 +23,15 @@ app.use((req, _res, next) => {
   next();
 });
 
+const checkoutLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "too many checkout attempts — slow down", decision: "BLOCKED", checks: [{ name: "rate_limit", passed: false, detail: "rate limited" }] },
+});
+const generalLimiter = rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "rate limited" } });
+app.use("/api", generalLimiter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "cia-backend", rpID: config.rpID, expectedOrigin: config.expectedOrigin });
@@ -27,7 +39,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/register", registerRouter);
 app.use("/api/intent", intentRouter);
 app.use("/api/agent", agentRouter);
-app.use("/api/checkout", createCheckoutRouter(providerFromEnv()));
+app.use("/api/checkout", checkoutLimiter, createCheckoutRouter(providerFromEnv()));
 app.use("/api/audit", auditRouter);
 app.use("/api/dev", devRouter);
 
