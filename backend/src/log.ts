@@ -1,4 +1,4 @@
-type Tag = "BOOT" | "REGISTER" | "INTENT" | "ATTEST" | "VERIFY" | "STORE" | "HTTP";
+type Tag = "BOOT" | "REGISTER" | "INTENT" | "ATTEST" | "VERIFY" | "STORE" | "HTTP" | "AGENT" | "GATE";
 
 export function log(tag: Tag, message: string, data?: Record<string, unknown>) {
   const ts = new Date().toISOString();

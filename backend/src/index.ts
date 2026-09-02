@@ -4,10 +4,12 @@ import { config } from "./config.js";
 import { log } from "./log.js";
 import { registerRouter } from "./routes/register.js";
 import { intentRouter } from "./routes/intent.js";
+import { agentRouter } from "./routes/agent.js";
 
 const app = express();
 app.use(cors({ origin: config.expectedOrigin }));
 app.use(express.json({ limit: "256kb" }));
+app.set("etag", false);
 app.use((req, _res, next) => {
   log("HTTP", `${req.method} ${req.path}`);
   next();
@@ -18,6 +20,7 @@ app.get("/api/health", (_req, res) => {
 });
 app.use("/api/register", registerRouter);
 app.use("/api/intent", intentRouter);
+app.use("/api/agent", agentRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : "internal error";
