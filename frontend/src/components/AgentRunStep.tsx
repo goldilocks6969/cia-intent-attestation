@@ -10,6 +10,9 @@ interface Props {
   gateEnabled: boolean;
   onGateChange: (on: boolean) => void;
   onRunComplete?: (run: AgentRun) => void;
+  onCheckout?: (run: AgentRun) => void;
+  checkoutBusy?: boolean;
+  checkoutError?: string | null;
   onBack: () => void;
 }
 
@@ -18,7 +21,7 @@ const FLASH_MS = 2000;
 
 type Phase = "idle" | "fetching" | "streaming" | "done";
 
-export function AgentRunStep({ certificate: cert, gateEnabled, onGateChange, onRunComplete, onBack }: Props) {
+export function AgentRunStep({ certificate: cert, gateEnabled, onGateChange, onRunComplete, onCheckout, checkoutBusy = false, checkoutError = null, onBack }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [attack, setAttack] = useState(false);
   const [run, setRun] = useState<AgentRun | null>(null);
@@ -191,14 +194,24 @@ export function AgentRunStep({ certificate: cert, gateEnabled, onGateChange, onR
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <button className="btn-ghost" onClick={onBack} disabled={busy}>
+      {showCart && checkoutError && <ErrorBanner message={checkoutError} />}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button className="btn-ghost" onClick={onBack} disabled={busy || checkoutBusy}>
           ← Certificate
         </button>
         {showCart && (
-          <span className="text-xs text-slate-500">
-            Verification gate is <span className={gateEnabled ? "text-mint" : "text-amber"}>{gateEnabled ? "ON" : "OFF"}</span> — this decides what happens at checkout.
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-slate-500">
+              Verification gate is <span className={gateEnabled ? "text-mint" : "text-amber"}>{gateEnabled ? "ON" : "OFF"}</span>
+            </span>
+            <button
+              className={gateEnabled ? "btn-primary" : "inline-flex items-center gap-2 rounded-lg border border-amber/60 bg-amber/15 px-4 py-2.5 text-sm font-semibold text-amber hover:bg-amber/25 disabled:opacity-40 transition"}
+              disabled={checkoutBusy || !run.finalCart}
+              onClick={() => onCheckout?.(run)}
+            >
+              {checkoutBusy ? <Spinner /> : gateEnabled ? "🛡️" : "⚠"} {checkoutBusy ? "Checking out…" : gateEnabled ? "Checkout through gate" : "Checkout (unfenced)"}
+            </button>
+          </div>
         )}
       </div>
     </div>

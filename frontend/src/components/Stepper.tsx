@@ -1,4 +1,4 @@
-export type StepKey = "register" | "intent" | "approve" | "certificate" | "agent";
+export type StepKey = "register" | "intent" | "approve" | "certificate" | "agent" | "verdict" | "ledger";
 
 const STEPS: { key: StepKey; label: string; hint: string }[] = [
   { key: "register", label: "Register", hint: "Bind a passkey" },
@@ -6,6 +6,8 @@ const STEPS: { key: StepKey; label: string; hint: string }[] = [
   { key: "approve", label: "Approve", hint: "Biometric signature" },
   { key: "certificate", label: "Certificate", hint: "Signed attestation" },
   { key: "agent", label: "Agent", hint: "Run + attack" },
+  { key: "verdict", label: "Verdict", hint: "Payment gate" },
+  { key: "ledger", label: "Ledger", hint: "Audit chain" },
 ];
 
 export function Stepper({ current }: { current: StepKey }) {
@@ -29,12 +31,12 @@ export function Stepper({ current }: { current: StepKey }) {
               >
                 {state === "done" ? "✓" : i + 1}
               </span>
-              <div className="hidden sm:block leading-tight">
+              <div className="hidden md:block leading-tight">
                 <div className={state === "todo" ? "text-slate-500" : "text-slate-200 font-medium"}>{s.label}</div>
                 <div className="text-[10px] text-slate-500">{s.hint}</div>
               </div>
             </div>
-            {i < STEPS.length - 1 && <span className={`h-px w-4 sm:w-8 ${i < idx ? "bg-mint/60" : "bg-line"}`} />}
+            {i < STEPS.length - 1 && <span className={`h-px w-3 sm:w-6 ${i < idx ? "bg-mint/60" : "bg-line"}`} />}
           </li>
         );
       })}

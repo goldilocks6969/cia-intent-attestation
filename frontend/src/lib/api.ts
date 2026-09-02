@@ -173,3 +173,78 @@ export const agentApi = {
     request<AgentRun>(`/agent/shop?attackEnabled=${attackEnabled ? "true" : "false"}`, { json: { intentId } }),
   latestRun: (intentId: string) => request<AgentRun>(`/agent/run/${encodeURIComponent(intentId)}`),
 };
+
+// --- checkout + audit --------------------------------------------------------------------------
+
+export interface GateCheck {
+  name: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency: string;
+  receipt: string;
+  status: string;
+  created_at: number;
+  mock: boolean;
+}
+
+export interface CheckoutResponse {
+  decision: "ALLOWED" | "BLOCKED";
+  gate: "on" | "off";
+  checks: GateCheck[];
+  reason?: string;
+  razorpayOrder?: RazorpayOrder;
+  cart: CartLine | null;
+  intent?: Intent | null;
+  certificateHash?: string;
+  ledger: { seq: number; hash: string };
+}
+
+/** A checkout result as remembered by the UI (adds client timestamp + intent id). */
+export interface StoredResult extends CheckoutResponse {
+  intentId: string;
+  at: number;
+}
+
+export interface LedgerEntry {
+  seq: number;
+  prevHash: string;
+  hash: string;
+  entry: {
+    intentId: string;
+    computedHash: string | null;
+    matchedCertHash: string | null;
+    checks: GateCheck[];
+    decision: "ALLOWED" | "BLOCKED";
+    gate: "on" | "off";
+    timestamp: number;
+    orderId?: string | null;
+    amountMinorUnits?: number | null;
+  };
+}
+
+export interface LedgerVerify {
+  valid: boolean;
+  length: number;
+  brokenAt?: number;
+  reason?: string;
+}
+
+export const checkoutApi = {
+  /** BLOCKED comes back as HTTP 403 with a full body; unwrap it instead of throwing. */
+  checkout: async (intentId: string, gateEnabled: boolean, cart?: CartLine): Promise<CheckoutResponse> => {
+    try {
+      return await request<CheckoutResponse>(`/checkout?gate=${gateEnabled ? "on" : "off"}`, { json: { intentId, cart } });
+    } catch (e) {
+      if (e instanceof ApiError && e.body && typeof e.body === "object" && "decision" in e.body) return e.body as CheckoutResponse;
+      throw e;
+    }
+  },
+  audit: () => request<{ length: number; head: string; chain: LedgerEntry[] }>("/audit"),
+  verify: () => request<LedgerVerify>("/audit/verify"),
+  tamper: (seq?: number) => request<{ tampered: number }>("/dev/tamper", { json: { seq, field: "decision" } }),
+};

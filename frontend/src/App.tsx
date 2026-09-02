@@ -3,8 +3,10 @@ import { startAuthentication } from "@simplewebauthn/browser";
 import type { SignedIntentCertificate } from "@cia/shared/core";
 import {
   api,
+  checkoutApi,
   errorMessage,
   type AgentRun,
+  type StoredResult,
   type CreateIntentResponse,
   type IntentRequest,
   type RegisterVerifyResponse,
@@ -15,6 +17,8 @@ import { IntentStep } from "./components/IntentStep";
 import { ApproveCard } from "./components/ApproveCard";
 import { CertificateView } from "./components/CertificateView";
 import { AgentRunStep } from "./components/AgentRunStep";
+import { VerdictScreen } from "./components/VerdictScreen";
+import { LedgerScreen } from "./components/LedgerScreen";
 
 /**
  * Single-page state machine:
@@ -40,7 +44,11 @@ type State =
       userId: string;
       certificate: SignedIntentCertificate;
       lastRun: AgentRun | null;
-    };
+      checkoutBusy?: boolean;
+      checkoutError?: string | null;
+    }
+  | { step: "verdict"; userId: string; certificate: SignedIntentCertificate; lastRun: AgentRun | null; result: StoredResult }
+  | { step: "ledger"; userId: string; certificate: SignedIntentCertificate | null; lastRun: AgentRun | null; result: StoredResult | null };
 
 const GATE_KEY = "cia.gateEnabled";
 function loadGate(): boolean {
@@ -55,6 +63,7 @@ function loadGate(): boolean {
 /** `?preview=certificate` renders a sample certificate so the final screen can be styled/rehearsed without a passkey. */
 function initialState(): State {
   const preview = new URLSearchParams(window.location.search).get("preview");
+  if (preview === "ledger") return { step: "ledger", userId: "alice", certificate: null, lastRun: null, result: null };
   if (preview === "certificate" || preview === "agent") {
     const issuedAt = Date.now();
     const certificate: SignedIntentCertificate = {
@@ -94,6 +103,8 @@ function initialState(): State {
 export default function App() {
   const [state, setState] = useState<State>(initialState);
   const [gateEnabled, setGateEnabled] = useState<boolean>(loadGate);
+  /** Every checkout decision made this session (the server keeps the authoritative hash chain). */
+  const [results, setResults] = useState<StoredResult[]>([]);
   useEffect(() => {
     try {
       localStorage.setItem(GATE_KEY, String(gateEnabled));
@@ -193,6 +204,20 @@ export default function App() {
           error: `${msg} — please re-submit the intent to get a fresh challenge.`,
         });
       }
+    }
+  }
+
+  async function checkout(run: AgentRun) {
+    if (state.step !== "agent") return;
+    const { userId, certificate } = state;
+    setState({ ...state, checkoutBusy: true, checkoutError: null });
+    try {
+      const res = await checkoutApi.checkout(certificate.intentId, gateEnabled, run.finalCart ?? undefined);
+      const stored: StoredResult = { ...res, intentId: certificate.intentId, at: Date.now() };
+      setResults((prev) => [...prev, stored]);
+      setState({ step: "verdict", userId, certificate, lastRun: run, result: stored });
+    } catch (e) {
+      setState({ step: "agent", userId, certificate, lastRun: run, checkoutBusy: false, checkoutError: errorMessage(e) });
     }
   }
 
@@ -299,6 +324,9 @@ export default function App() {
             gateEnabled={gateEnabled}
             onGateChange={setGateEnabled}
             onRunComplete={(run) => setState({ ...state, lastRun: run })}
+            onCheckout={checkout}
+            checkoutBusy={state.checkoutBusy}
+            checkoutError={state.checkoutError}
             onBack={() =>
               setState({
                 step: "certificate",
@@ -306,6 +334,25 @@ export default function App() {
                 certificate: state.certificate,
               })
             }
+          />
+        )}
+        {state.step === "verdict" && (
+          <VerdictScreen
+            result={state.result}
+            certificate={state.certificate}
+            onViewLedger={() => setState({ ...state, step: "ledger" })}
+            onBack={() => setState({ step: "agent", userId: state.userId, certificate: state.certificate, lastRun: state.lastRun })}
+          />
+        )}
+        {state.step === "ledger" && (
+          <LedgerScreen
+            results={results}
+            onBack={() =>
+              state.result && state.certificate
+                ? setState({ step: "verdict", userId: state.userId, certificate: state.certificate, lastRun: state.lastRun, result: state.result })
+                : setState({ step: "intent", userId: state.userId, busy: false, error: null })
+            }
+            onNewIntent={() => setState({ step: "intent", userId: state.userId, busy: false, error: null })}
           />
         )}
       </main>
