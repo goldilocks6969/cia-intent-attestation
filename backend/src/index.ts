@@ -6,6 +6,7 @@ import { registerRouter } from "./routes/register.js";
 import { intentRouter } from "./routes/intent.js";
 import { agentRouter } from "./routes/agent.js";
 import { createCheckoutRouter } from "./routes/checkout.js";
+import { auditRouter, devRouter } from "./routes/audit.js";
 import { providerFromEnv } from "./payments.js";
 
 const app = express();
@@ -27,6 +28,8 @@ app.use("/api/register", registerRouter);
 app.use("/api/intent", intentRouter);
 app.use("/api/agent", agentRouter);
 app.use("/api/checkout", createCheckoutRouter(providerFromEnv()));
+app.use("/api/audit", auditRouter);
+app.use("/api/dev", devRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "not found" });

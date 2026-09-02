@@ -23,6 +23,8 @@ npm run dev:frontend
 npm test
 ```
 
+CI (`.github/workflows/ci.yml`) runs typecheck, tests and the frontend build on every push.
+
 Open http://localhost:5173. The frontend proxies `/api` to the backend on port 4000, so the WebAuthn
 origin stays `http://localhost:5173` (RP ID `localhost`). Change `FRONTEND_ORIGIN` in `.env` if you
 serve it elsewhere.
@@ -41,6 +43,18 @@ serve it elsewhere.
    injection and the agent puts a ₹49,990 TV in the cart instead. The decision trace replays as a
    live log and the injected payload is flashed on screen. The 🛡️ Verification Gate toggle is
    remembered for the checkout step.
+
+6. **Verdict** — checkout runs the verification gate: certificate present/unexpired/unconsumed,
+   proposed-txn canonical hash, intent↔certificate hash binding, strict field comparison against
+   the signed intent, constraint reasons, and an independent WebAuthn signature re-verification.
+   ALLOWED creates a Razorpay test order (or a mock order if no keys are set). Flip the
+   🛡️ gate OFF to see the unfenced path pay for the TV.
+7. **Ledger** — every decision is appended to a tamper-evident hash chain
+   (`hash = SHA256(canonicalize(entry) + prevHash)`). "Verify Ledger Integrity" walks the chain;
+   "Tamper (dev)" mutates an entry in place so you can show detection live.
+
+Set `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` (test mode) to create real orders. Without them a
+mock provider returns `order_mock_…` ids so the demo still completes offline.
 
 Set `OPENAI_API_KEY` to run a real tool-using LLM agent (`OPENAI_MODEL`, default gpt-4o-mini).
 Without a key the backend uses a deterministic scripted agent, so the demo works offline.
@@ -64,6 +78,11 @@ styling or rehearsing the demo).
 | POST | `/api/agent/shop?attackEnabled=true\|false` | run the shopping agent for `{ intentId }`; returns `{ decision_trace, finalCart, hijacked, injectedPayload }` |
 | GET | `/api/agent/product-page?sku=X&attackEnabled=true` | the attacker-controlled product page (HTML, or JSON with `format=json`) |
 | GET | `/api/agent/run/:intentId` | latest agent run for an intent |
+
+| POST | `/api/checkout?gate=on\|off` | the payment authorization gate for `{ intentId, cart? }` → `{ decision, checks[], razorpayOrder? }` (rate-limited) |
+| GET | `/api/audit` | full hash-chained audit ledger |
+| GET | `/api/audit/verify` | recompute every link → `{ valid, brokenAt?, reason? }` |
+| POST | `/api/dev/tamper` | dev only: mutate a ledger entry in place to demo detection |
 
 Challenges (registration and intent) are single-use: they are deleted on the first verify attempt,
 success or fail.
