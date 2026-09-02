@@ -1,25 +1,33 @@
 import express from "express";
 import cors from "cors";
-import { IntentSchema, hashIntent } from "@cia/shared";
+import { config } from "./config.js";
+import { log } from "./log.js";
+import { registerRouter } from "./routes/register.js";
+import { intentRouter } from "./routes/intent.js";
 
 const app = express();
-app.use(cors());
-app.use(express.json());
-
-app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "cia-backend" });
+app.use(cors({ origin: config.expectedOrigin }));
+app.use(express.json({ limit: "256kb" }));
+app.use((req, _res, next) => {
+  log("HTTP", `${req.method} ${req.path}`);
+  next();
 });
 
-// Sanity endpoint: returns the canonical hash of a submitted intent.
-app.post("/intent/hash", (req, res) => {
-  const parsed = IntentSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: parsed.error.flatten() });
-  }
-  return res.json({ hash: hashIntent(parsed.data) });
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, service: "cia-backend", rpID: config.rpID, expectedOrigin: config.expectedOrigin });
+});
+app.use("/api/register", registerRouter);
+app.use("/api/intent", intentRouter);
+
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const message = err instanceof Error ? err.message : "internal error";
+  log("HTTP", `unhandled error: ${message}`);
+  res.status(500).json({ error: message });
 });
 
-const port = Number(process.env.PORT ?? 4000);
-app.listen(port, () => {
-  console.log(`cia-backend listening on http://localhost:${port}`);
+app.listen(config.port, () => {
+  log("BOOT", `cia-backend listening on http://localhost:${config.port}`, {
+    rpID: config.rpID,
+    expectedOrigin: config.expectedOrigin,
+  });
 });
