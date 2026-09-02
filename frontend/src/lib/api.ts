@@ -247,4 +247,6 @@ export const checkoutApi = {
   audit: () => request<{ length: number; head: string; chain: LedgerEntry[] }>("/audit"),
   verify: () => request<LedgerVerify>("/audit/verify"),
   tamper: (seq?: number) => request<{ tampered: number }>("/dev/tamper", { json: { seq, field: "decision" } }),
+  /** Dev only: wipe users, certificates, runs and the ledger so a rehearsal starts clean. */
+  reset: () => request<{ ok: true }>("/dev/reset", { json: {} }),
 };

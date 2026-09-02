@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { ledger } from "../ledger.js";
+import { certificates, pendingIntents, registrationChallenges, usedNonces, users } from "../store.js";
+import { agentRuns } from "./agent.js";
 import { log } from "../log.js";
 
 export const auditRouter = Router();
@@ -49,4 +51,19 @@ devRouter.post("/tamper", (req, res) => {
   if (!entry) return res.status(404).json({ error: `no entry #${seq}` });
   log("GATE", `⚠ DEV: tampered ledger entry #${seq} (${parsed.data.field})`);
   res.json({ tampered: seq, field: parsed.data.field, before, after: entry.entry });
+});
+
+// POST /api/dev/reset — DEV ONLY: wipe every in-memory store so a rehearsal starts from a clean slate.
+devRouter.post("/reset", (_req, res) => {
+  if (process.env.NODE_ENV === "production") return res.status(404).end();
+  const counts = { users: users.size, certificates: certificates.size, runs: agentRuns.size, ledger: ledger.length };
+  users.clear();
+  registrationChallenges.clear();
+  pendingIntents.clear();
+  certificates.clear();
+  usedNonces.clear();
+  agentRuns.clear();
+  ledger.reset();
+  log("STORE", "⚠ DEV: reset all in-memory state", counts);
+  res.json({ ok: true, cleared: counts });
 });

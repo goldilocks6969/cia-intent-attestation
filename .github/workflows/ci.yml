@@ -22,5 +22,5 @@ jobs:
         run: npm run typecheck --workspaces --if-present
       - name: Test
         run: npm test --workspaces --if-present
-      - name: Build frontend
-        run: npm run build --workspace=frontend
+      - name: Build (backend bundle + frontend)
+        run: npm run build

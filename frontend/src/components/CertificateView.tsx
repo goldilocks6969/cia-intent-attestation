@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { SignedIntentCertificate } from "@cia/shared/core";
 import { api, errorMessage, type CertificateVerification } from "../lib/api";
 import { formatCountdown, isoTime, paiseToRupees, truncateMiddle } from "../lib/format";
+import { Spinner } from "./RegisterStep";
 
 interface Props {
   certificate: SignedIntentCertificate;
@@ -14,6 +15,7 @@ export function CertificateView({ certificate: cert, onNewIntent, onRunAgent }: 
   const [verification, setVerification] = useState<CertificateVerification | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);
@@ -28,10 +30,13 @@ export function CertificateView({ certificate: cert, onNewIntent, onRunAgent }: 
 
   async function reverify() {
     setVerifyError(null);
+    setVerifying(true);
     try {
       setVerification(await api.verifyCertificate(cert.intentId));
     } catch (e) {
       setVerifyError(errorMessage(e));
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -113,8 +118,8 @@ export function CertificateView({ certificate: cert, onNewIntent, onRunAgent }: 
 
           {/* verification */}
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-5">
-            <button className="btn-ghost" onClick={reverify}>
-              Re-verify signature
+            <button className="btn-ghost" onClick={reverify} disabled={verifying}>
+              {verifying && <Spinner />} Re-verify signature
             </button>
             <button className="btn-ghost" onClick={() => setShowRaw((s) => !s)}>
               {showRaw ? "Hide raw JSON" : "Raw JSON"}

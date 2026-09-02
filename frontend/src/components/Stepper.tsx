@@ -1,17 +1,25 @@
 export type StepKey = "register" | "intent" | "approve" | "certificate" | "agent" | "verdict" | "ledger";
 
-const STEPS: { key: StepKey; label: string; hint: string }[] = [
+export type NavStep = "register" | "intent" | "sign" | "agent" | "verdict" | "ledger";
+
+/** Collapse the state-machine step into the 6 navbar steps (approve + certificate = Sign). */
+export function navStepOf(step: StepKey): NavStep {
+  if (step === "approve" || step === "certificate") return "sign";
+  return step;
+}
+
+const STEPS: { key: NavStep; label: string; hint: string }[] = [
   { key: "register", label: "Register", hint: "Bind a passkey" },
   { key: "intent", label: "Intent", hint: "Declare constraints" },
-  { key: "approve", label: "Approve", hint: "Biometric signature" },
-  { key: "certificate", label: "Certificate", hint: "Signed attestation" },
+  { key: "sign", label: "Sign", hint: "Biometric certificate" },
   { key: "agent", label: "Agent", hint: "Run + attack" },
   { key: "verdict", label: "Verdict", hint: "Payment gate" },
   { key: "ledger", label: "Ledger", hint: "Audit chain" },
 ];
 
 export function Stepper({ current }: { current: StepKey }) {
-  const idx = STEPS.findIndex((s) => s.key === current);
+  const nav = navStepOf(current);
+  const idx = STEPS.findIndex((s) => s.key === nav);
   return (
     <ol className="flex items-center gap-2 text-xs">
       {STEPS.map((s, i) => {
@@ -23,7 +31,7 @@ export function Stepper({ current }: { current: StepKey }) {
                 className={[
                   "flex h-6 w-6 items-center justify-center rounded-full border font-mono text-[11px]",
                   state === "done" && "border-mint/60 bg-mint/15 text-mint",
-                  state === "active" && "border-mint bg-mint text-ink font-semibold shadow-[0_0_20px_rgba(52,245,197,.5)]",
+                  state === "active" && "border-mint bg-mint text-ink font-semibold shadow-[0_0_20px_rgba(52,211,153,.5)]",
                   state === "todo" && "border-line text-slate-500",
                 ]
                   .filter(Boolean)
@@ -36,7 +44,7 @@ export function Stepper({ current }: { current: StepKey }) {
                 <div className="text-[10px] text-slate-500">{s.hint}</div>
               </div>
             </div>
-            {i < STEPS.length - 1 && <span className={`h-px w-3 sm:w-6 ${i < idx ? "bg-mint/60" : "bg-line"}`} />}
+            {i < STEPS.length - 1 && <span className={`h-px w-3 sm:w-8 ${i < idx ? "bg-mint/60" : "bg-line"}`} />}
           </li>
         );
       })}

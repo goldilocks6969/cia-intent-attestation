@@ -15,6 +15,7 @@ export function LedgerScreen({ results, onBack, onNewIntent }: Props) {
   const [head, setHead] = useState<string>("");
   const [verify, setVerify] = useState<LedgerVerify | null>(null);
   const [busy, setBusy] = useState<"load" | "verify" | "tamper" | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -23,6 +24,7 @@ export function LedgerScreen({ results, onBack, onNewIntent }: Props) {
       const r = await checkoutApi.audit();
       setChain(r.chain);
       setHead(r.head);
+      setLoaded(true);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -101,7 +103,7 @@ export function LedgerScreen({ results, onBack, onNewIntent }: Props) {
 
       {/* stats */}
       <div className="grid grid-cols-3 gap-3 font-mono">
-        <Stat label="entries" value={String(chain.length)} />
+        <Stat label="entries" value={loaded ? String(chain.length) : "…"} />
         <Stat label="allowed" value={String(allowed)} tone="green" />
         <Stat label="blocked" value={String(blocked)} tone="red" />
       </div>
@@ -128,7 +130,15 @@ export function LedgerScreen({ results, onBack, onNewIntent }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
-              {chain.length === 0 && (
+              {!loaded && busy === "load" &&
+                [0, 1, 2].map((i) => (
+                  <tr key={`sk-${i}`}>
+                    {[3, 10, 6, 5, 6, 14, 8].map((w, j) => (
+                      <td key={j} className="px-3 py-2.5"><div className="skeleton h-3" style={{ width: `${w * 0.5}rem` }} /></td>
+                    ))}
+                  </tr>
+                ))}
+              {loaded && chain.length === 0 && (
                 <tr><td colSpan={7} className="px-3 py-8 text-center text-slate-600">▌ no decisions yet — run a checkout</td></tr>
               )}
               {[...chain].reverse().map((e) => {

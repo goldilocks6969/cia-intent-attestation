@@ -225,47 +225,58 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [step]);
+
+  const [resetting, setResetting] = useState(false);
+  /** Demo reset: wipe backend state (dev endpoint) and restart the flow. Safe to hit between video takes. */
+  async function resetDemo() {
+    setResetting(true);
+    try {
+      await checkoutApi.reset();
+    } catch {
+      /* backend may be offline; still reset the UI */
+    }
+    try {
+      localStorage.removeItem(GATE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setResults([]);
+    setGateEnabled(true);
+    setState({ step: "register" });
+    setResetting(false);
+    if (window.location.search) window.history.replaceState(null, "", window.location.pathname);
+  }
   const userId = "userId" in state ? state.userId : null;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-8 sm:px-6">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
+    <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 pb-8 sm:px-6">
+      <header className="sticky top-0 z-40 -mx-4 mb-8 border-b border-line bg-ink/80 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="flex items-center gap-2">
-            <span className="rounded-md bg-mint/15 px-2 py-0.5 font-mono text-xs font-semibold tracking-widest text-mint">
-              CIA
-            </span>
-            <h1 className="text-lg font-semibold tracking-tight">
-              Cryptographic Intent Attestation
-            </h1>
+            <span className="rounded-md bg-mint/15 px-2 py-0.5 font-mono text-xs font-semibold tracking-widest text-mint">CIA</span>
+            <h1 className="text-sm font-semibold tracking-tight sm:text-base">Cryptographic Intent Attestation</h1>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
-            Sign what you mean, not what the page shows. RFC 8785 · SHA-256 ·
-            WebAuthn.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500">
-          {userId && (
-            <span className="rounded-full border border-line px-2 py-0.5 text-slate-300">
-              {userId}
+          <div className="order-last w-full sm:order-none sm:w-auto">
+            <Stepper current={step} />
+          </div>
+          <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500">
+            {userId && <span className="rounded-full border border-line px-2 py-0.5 text-slate-300">{userId}</span>}
+            <span className="flex items-center gap-1.5" title={health && health !== "down" ? `origin ${health.expectedOrigin}` : undefined}>
+              <span className={`h-1.5 w-1.5 rounded-full ${health === "down" ? "bg-red-500" : health ? "bg-mint" : "bg-slate-600"}`} />
+              {health === "down" ? "backend offline" : health ? `rp=${health.rpID}` : "…"}
             </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${health === "down" ? "bg-red-500" : health ? "bg-mint" : "bg-slate-600"}`}
-            />
-            {health === "down"
-              ? "backend offline"
-              : health
-                ? `rp=${health.rpID}`
-                : "…"}
-          </span>
+            <button
+              type="button"
+              onClick={resetDemo}
+              disabled={resetting}
+              className="rounded-md border border-line px-2 py-1 text-[11px] text-slate-300 hover:border-red-400/60 hover:text-red-200 disabled:opacity-40 transition"
+              title="Clear all frontend + backend demo state and start over"
+            >
+              {resetting ? "resetting…" : "↺ Reset demo"}
+            </button>
+          </div>
         </div>
       </header>
-
-      <div className="mb-6">
-        <Stepper current={step} />
-      </div>
 
       <main className="flex-1">
         {state.step === "register" && (

@@ -8,14 +8,15 @@ export default {
         mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       colors: {
-        ink: "#070a12",
-        panel: "#0d1220",
-        line: "#1c2438",
-        mint: "#34f5c5",
-        amber: "#ffb454",
+        // Single dark-slate theme. Semantic accents: mint = approve/allow (emerald), red = blocked, amber = warning.
+        ink: "#020617", // slate-950
+        panel: "#0f172a", // slate-900
+        line: "#1e293b", // slate-800
+        mint: "#34d399", // emerald-400
+        amber: "#fbbf24", // amber-400
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(52,245,197,.25), 0 20px 80px -20px rgba(52,245,197,.35)",
+        glow: "0 0 0 1px rgba(52,211,153,.25), 0 20px 80px -20px rgba(52,211,153,.35)",
       },
       keyframes: {
         pulseRing: {
