@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "types": ["node"],
+    "outDir": "dist",
+    "rootDir": "..",
+    "allowImportingTsExtensions": false
+  },
+  "include": ["src", "../packages/shared/src"]
+}

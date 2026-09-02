@@ -1,0 +1,17 @@
+{
+  "name": "cia-intent-attestation",
+  "private": true,
+  "version": "0.1.0",
+  "description": "CIA — Cryptographic Intent Attestation",
+  "workspaces": ["frontend", "backend", "packages/*"],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
