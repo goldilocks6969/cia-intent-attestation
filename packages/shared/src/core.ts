@@ -223,3 +223,25 @@ export function verifyConstraints(
 
   return { hardPass, softMatch, reasons };
 }
+
+// ---------------------------------------------------------------------------
+// Signed Intent Certificate (shared shape between backend + frontend)
+// ---------------------------------------------------------------------------
+
+export type CertificateStatus = "active" | "consumed" | "expired" | "revoked";
+
+export interface SignedIntentCertificate {
+  intentId: string;
+  intent: Intent;
+  /** SHA-256 hex of the RFC 8785 canonical intent. */
+  hash: string;
+  signature: string; // base64url
+  authenticatorData: string; // base64url
+  clientDataJSON: string; // base64url
+  credentialID: string; // base64url
+  rpID: string;
+  origin: string;
+  issuedAt: number;
+  status: CertificateStatus;
+  consumedAt: number | null;
+}

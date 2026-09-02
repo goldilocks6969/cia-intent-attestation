@@ -1,3 +1,50 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html { color-scheme: dark; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(52, 245, 197, 0.08), transparent 60%),
+      radial-gradient(800px 400px at 100% 100%, rgba(120, 100, 255, 0.08), transparent 60%),
+      #070a12;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .label { @apply block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5; }
+  .input {
+    @apply w-full rounded-lg bg-black/40 border border-line px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-600
+      focus:outline-none focus:ring-2 focus:ring-mint/40 focus:border-mint/60 transition;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-mint text-ink font-semibold px-4 py-2.5 text-sm
+      hover:brightness-110 active:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed transition;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-white/[.02] text-slate-200 px-4 py-2.5 text-sm
+      hover:bg-white/[.06] disabled:opacity-40 transition;
+  }
+  .card { @apply rounded-2xl border border-line bg-panel/80 backdrop-blur p-6 shadow-xl shadow-black/40; }
+
+  /* gradient border for the certificate */
+  .cert-frame {
+    position: relative;
+    border-radius: 1.25rem;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(52,245,197,.9), rgba(120,100,255,.5) 40%, rgba(255,180,84,.6) 70%, rgba(52,245,197,.9));
+    background-size: 200% 200%;
+    animation: shimmer 8s linear infinite;
+  }
+  .cert-frame > .cert-inner {
+    border-radius: calc(1.25rem - 1px);
+    background:
+      radial-gradient(600px 200px at 0% 0%, rgba(52,245,197,.06), transparent 60%),
+      #0a0f1c;
+  }
+  .kv { @apply grid grid-cols-[minmax(9rem,12rem)_1fr] gap-x-4 gap-y-1.5 items-baseline; }
+  .k { @apply text-[11px] uppercase tracking-[0.18em] text-slate-500 font-medium; }
+  .v { @apply font-mono text-[13px] text-slate-100 break-all; }
+}

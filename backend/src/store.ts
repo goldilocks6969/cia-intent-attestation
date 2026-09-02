@@ -1,4 +1,4 @@
-import type { Intent } from "@cia/shared";
+import type { Intent, SignedIntentCertificate } from "@cia/shared";
 import type { WebAuthnCredential } from "@simplewebauthn/server";
 import { log } from "./log.js";
 
@@ -19,20 +19,7 @@ export interface PendingIntent {
   createdAt: number;
 }
 
-export interface SignedIntentCertificate {
-  intentId: string;
-  intent: Intent;
-  hash: string;
-  signature: string; // base64url
-  authenticatorData: string; // base64url
-  clientDataJSON: string; // base64url
-  credentialID: string; // base64url
-  rpID: string;
-  origin: string;
-  issuedAt: number;
-  status: "active" | "consumed" | "expired" | "revoked";
-  consumedAt: number | null;
-}
+export type { SignedIntentCertificate };
 
 /** In-memory stores. Fine for a demo; swap for a DB later. */
 export const users = new Map<string, User>();

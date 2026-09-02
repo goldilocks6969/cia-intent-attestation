@@ -12,6 +12,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { "/api": { target: "http://localhost:4000", changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, "") } },
+    strictPort: true, // origin must stay stable: it is the WebAuthn expectedOrigin
+    proxy: { "/api": { target: process.env.VITE_BACKEND_URL ?? "http://localhost:4000", changeOrigin: true } },
   },
 });
